@@ -8,29 +8,75 @@ import BlurCircle from '../components/BlurCircle'
 import { assets } from '../assets/assets'
 import toast from 'react-hot-toast';
 import MyBookings from './MyBookings'
+import { useAppContext } from '../context/AppContext'
+
 
 const SeatLayout = () => {
   const groupRows=[["A","B"],["C","D"],["E","F"],["G","H"],["I","J"]]
+  const {axios,getToken,user}=useAppContext()
   const {id,date}=useParams()
   const [selectedSeats,setSelectedSeats]=useState([])
   const [selectedTime,setSelectedTime]=useState(null)
   const [show,setShow]=useState(null)
+  const [occupiedSeats,setOccupiedSeats]=useState([])
 
   const navigate=useNavigate()
 
   const getShow =async () => {
-    const show =dummyShowsData.find(show=>show._id===id)
-    if(show){
-      setShow({
-        movie:show,
-        dateTime:dummyDateTimeData
-      })
+    try {
+      const {data}=await axios.get(`/api/show/${id}`)
+      if(data.success){
+        setShow(data)
+
+      }
+    } catch (error) {
+      console.log(error)
     }
-    
   }
+
+const getOccupiedSeats=async()=>{
+  try {
+      const {data}=await axios.get(`/api/booking/seats/${selectedTime.showId}`)
+      if(data.success){
+        setOccupiedSeats(data.occupiedSeats)
+
+      }
+      else{
+        toast.error(data.message)
+      }
+    } catch (error) {
+      console.log(error)
+    }
+}
+
+const bookTickets=async()=>{
+  try {
+    if(!user)return toast.error('Please login to proceed');
+    
+      if(!selectedTime||!selectedSeats.length)return toast.error('Please select a time ad seats');
+
+      const {data}=await axios.post('/api/booking/create',{showId:selectedTime.showId,selectedSeats},{headers:{Authorization:`Bearer ${await getToken()}`}} )
+
+      if(data.success){
+     window.location.href=data.url;
+      }
+      else{
+        toast.error(data.message)
+      }
+  } catch (error) {
+    toast.error(error.message)
+  }
+}
+
 useEffect(()=>{
   getShow()
 },[])
+
+useEffect(()=>{
+  if(selectedTime){
+    getOccupiedSeats()}
+  
+},[selectedTime])
 
 const handleSeatClick=(seatId)=>{
   if(!selectedTime){
@@ -39,6 +85,9 @@ const handleSeatClick=(seatId)=>{
   if(!selectedSeats.includes(seatId)&&selectedSeats.length>4){
     return toast("You can only Select 5 seats")
 
+  }
+  if(occupiedSeats.includes(seatId)){
+    return toast('This is already booked')
   }
   setSelectedSeats(prev=>prev.includes(seatId)? prev.filter(seat=>seat!==seatId):[...prev,seatId] )
 
@@ -50,7 +99,9 @@ const handleSeatClick=(seatId)=>{
         {Array.from({length:count},(_,i)=>{
           const seatId=`${row}${i+1}`;
           return (
-            <button key={seatId} onClick={()=>handleSeatClick(seatId)} className={`h-8 w-8 rounded border border-primary/60 cursor-pointer ${selectedSeats.includes(seatId) && "bg-primary text-white"}`}>
+            <button key={seatId} onClick={()=>handleSeatClick(seatId)} className={`h-8 w-8 rounded border border-primary/60 cursor-pointer
+             ${selectedSeats.includes(seatId) && "bg-primary text-white"}
+             ${occupiedSeats.includes(seatId)&& "opacity-50"}`}>
               {seatId}
             </button>
           )
@@ -100,7 +151,7 @@ const handleSeatClick=(seatId)=>{
            
           </div>
         </div>
-          <button onClick={()=>navigate('/my-bookings')} className='flex items-center gap-1 mt-20 px-10 py-3 text-sm bg-primary hover:bg-primary-dull transition rounded-full font-medium cursor-pointer active:scale-95'>
+          <button onClick={bookTickets} className='flex items-center gap-1 mt-20 px-10 py-3 text-sm bg-primary hover:bg-primary-dull transition rounded-full font-medium cursor-pointer active:scale-95'>
              Proceed to checkout 
           <ArrowRightIcon strokeWidth={3} className='w-4 h-4'  />
           </button>
