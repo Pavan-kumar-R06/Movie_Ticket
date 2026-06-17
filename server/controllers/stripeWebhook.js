@@ -110,6 +110,8 @@
 import stripe from "stripe";
 import Booking from "../models/Booking.js";
 
+import Show from "../models/Show.js";
+
 export const stripeWebhooks = async (request, response) => {
   console.log("STRIPE WEBHOOK HIT");
 

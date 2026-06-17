@@ -14,7 +14,7 @@ import { stripeWebhooks } from './controllers/stripeWebhook.js';
 
 const app=express();
 const port=3000;
-
+app.use('/api/inngest', serve({ client: inngest, functions}));
 app.use(clerkMiddleware())
 await connectDB()
 
@@ -25,7 +25,8 @@ app.use(cors())
 app.get('/',(req,res)=>
     res.send('Server is Live')
 )
-app.use('/api/inngest', serve({ client: inngest, functions}));
+
+
 app.use('/api/show',showRouter)
 app.use('/api/booking',bookingRouter)
 app.use('/api/admin',adminRouter)

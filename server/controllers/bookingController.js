@@ -50,10 +50,17 @@ try {
     // })
     // showData.markModified('occupiedSeats');
     // await showData.save();
-    selectedSeats.forEach((seat) => {
-    showData.occupiedSeats[seat] = userId;
+//     selectedSeats.forEach((seat) => {
+//     showData.occupiedSeats[seat] = userId;
+// });
+// showData.occupiedSeats[seat] = booking._id;
+// showData.markModified("occupiedSeats");
+// await showData.save();
+
+selectedSeats.forEach((seat) => {
+    showData.occupiedSeats[seat] = booking._id;
 });
-showData.occupiedSeats[seat] = booking._id;
+
 showData.markModified("occupiedSeats");
 await showData.save();
  const stripeInstance=new stripe(process.env.STRIPE_SECRET_KEY)
@@ -77,20 +84,23 @@ await showData.save();
         bookingId: booking._id.toString()},
         expires_at: Math.floor(Date.now()/ 1000)+ 30 * 60, // Expires in 30 minutes
     })
+    
     booking.paymentLink = session.url
     await booking.save()
 
     // Run Inngest Sheduler Function to check payment status after 10 minutes
-    await inngest.send({
-        name:"app/checkpayment",
-        data:{
-        bookingId: booking._id.tostring()
-        }
+   
 
-        })
+console.log("Sending Inngest event...");
 
+await inngest.send({
+  name: "app/checkpayment",
+  data: {
+    bookingId: booking._id.toString(),
+  },
+});
 
-
+console.log("Inngest event sent successfully");
     res.json({success: true, url:session.url})
     
 }

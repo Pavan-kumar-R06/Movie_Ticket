@@ -1,6 +1,7 @@
 import { Inngest } from "inngest";
 import User from "../models/User.js";
 import Booking from "../models/Booking.js";
+import Show from "../models/Show.js";
 
 // Create a client to send and receive events
 export const inngest = new Inngest({
@@ -84,8 +85,6 @@ const syncUserUpdation = inngest.createFunction(
   }
 );
 
-
-// Inngest Function to cancel booking and release seats of show after 10 minutes of booking created if payment is not made
 const releaseSeatsAndDeleteBooking = inngest.createFunction(
   {
     id: "release-seats-delete-booking",
@@ -97,41 +96,99 @@ const releaseSeatsAndDeleteBooking = inngest.createFunction(
   },
 
   async ({ event, step }) => {
+    console.log("FUNCTION STARTED");
+    console.log("Event Data:", event.data);
+
+    
     const tenMinutesLater = new Date(
-      Date.now() + 10 * 60 * 1000
-    );
+  Date.now() + 30 * 1000
+);
 
     await step.sleepUntil(
       "wait-for-10-minutes",
       tenMinutesLater
     );
 
+    console.log("WAKE UP AFTER 10 MINUTES");
+
     await step.run(
       "check-payment-status",
       async () => {
-        const bookingId = event.data.bookingId;
+        try {
+          const bookingId = event.data.bookingId;
 
-        const booking = await Booking.findById(
-          bookingId
-        );
+          console.log("Booking ID:", bookingId);
 
-        if (!booking) return;
-
-        if (!booking.isPaid) {
-          const show = await Show.findById(
-            booking.show
+          const booking = await Booking.findById(
+            bookingId
           );
 
-          booking.bookedSeats.forEach((seat) => {
-            delete show.occupiedSeats[seat];
-          });
+          console.log("Booking:", booking);
 
-          show.markModified("occupiedSeats");
+          if (!booking) {
+            console.log("Booking not found");
+            return;
+          }
 
-          await show.save();
+          console.log(
+            "Payment Status:",
+            booking.isPaid
+          );
 
-          await Booking.findByIdAndDelete(
-            booking._id
+          if (!booking.isPaid) {
+            const show = await Show.findById(
+              booking.show
+            );
+
+            if (!show) {
+              console.log("Show not found");
+              return;
+            }
+
+            console.log(
+              "Occupied Seats Before:",
+              show.occupiedSeats
+            );
+
+            booking.bookedSeats.forEach((seat) => {
+              console.log(
+                "Removing Seat:",
+                seat
+              );
+              delete show.occupiedSeats[seat];
+            });
+
+            console.log(
+              "Occupied Seats After:",
+              show.occupiedSeats
+            );
+
+            show.markModified(
+              "occupiedSeats"
+            );
+
+            await show.save();
+
+            console.log(
+              "Seats Released Successfully"
+            );
+
+            await Booking.findByIdAndDelete(
+              booking._id
+            );
+
+            console.log(
+              "Booking Deleted Successfully"
+            );
+          } else {
+            console.log(
+              "Booking already paid. No action required."
+            );
+          }
+        } catch (error) {
+          console.log(
+            "Release Seats Error:",
+            error.message
           );
         }
       }
@@ -139,10 +196,18 @@ const releaseSeatsAndDeleteBooking = inngest.createFunction(
   }
 );
 
+
 // Export all functions
 export const functions = [
   syncUserCreation,
   syncUserDeletion,
   syncUserUpdation,
-  releaseSeatsAndDeleteBooking,
+  
+releaseSeatsAndDeleteBooking,
+
 ];
+console.log(
+  "Functions loaded:",
+  functions.map((fn) => fn.id)
+);
+console.log("Functions loaded:", functions.length);
