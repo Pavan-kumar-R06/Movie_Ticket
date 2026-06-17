@@ -3,7 +3,7 @@
 
 {
     "source":"/(.*)"  ,
-    "distination":"/"
+    "destination":"/"
 }
     ]
 }
