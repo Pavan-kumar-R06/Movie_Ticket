@@ -96,20 +96,18 @@ const releaseSeatsAndDeleteBooking = inngest.createFunction(
   },
 
   async ({ event, step }) => {
-    console.log("FUNCTION STARTED");
-    console.log("Event Data:", event.data);
+    // console.log("FUNCTION STARTED");
+    // console.log("Event Data:", event.data);
 
     
-    const tenMinutesLater = new Date(
-  Date.now() + 30 * 1000
-);
+   const tenMinutesLater = new Date(Date.now() + 2 * 60 * 1000); // 10 minutes
 
     await step.sleepUntil(
       "wait-for-10-minutes",
       tenMinutesLater
     );
 
-    console.log("WAKE UP AFTER 10 MINUTES");
+    // console.log("WAKE UP AFTER 10 MINUTES");
 
     await step.run(
       "check-payment-status",
@@ -117,23 +115,23 @@ const releaseSeatsAndDeleteBooking = inngest.createFunction(
         try {
           const bookingId = event.data.bookingId;
 
-          console.log("Booking ID:", bookingId);
+          // console.log("Booking ID:", bookingId);
 
           const booking = await Booking.findById(
             bookingId
           );
 
-          console.log("Booking:", booking);
+          // console.log("Booking:", booking);
 
           if (!booking) {
-            console.log("Booking not found");
+            // console.log("Booking not found");
             return;
           }
 
-          console.log(
-            "Payment Status:",
-            booking.isPaid
-          );
+          // console.log(
+          //   "Payment Status:",
+          //   booking.isPaid
+          // );
 
           if (!booking.isPaid) {
             const show = await Show.findById(
@@ -141,27 +139,28 @@ const releaseSeatsAndDeleteBooking = inngest.createFunction(
             );
 
             if (!show) {
-              console.log("Show not found");
+              // console.log("Show not found");
               return;
             }
 
-            console.log(
-              "Occupied Seats Before:",
-              show.occupiedSeats
-            );
+            // console.log(
+            //   "Occupied Seats Before:",
+            //   show.occupiedSeats
+            // );
 
             booking.bookedSeats.forEach((seat) => {
-              console.log(
-                "Removing Seat:",
-                seat
-              );
-              delete show.occupiedSeats[seat];
+              // console.log(
+              //   "Removing Seat:",
+              //   seat
+              // );
+              
+delete show.occupiedSeats[seat];
             });
 
-            console.log(
-              "Occupied Seats After:",
-              show.occupiedSeats
-            );
+            // console.log(
+            //   "Occupied Seats After:",
+            //   show.occupiedSeats
+            // );
 
             show.markModified(
               "occupiedSeats"
@@ -169,17 +168,17 @@ const releaseSeatsAndDeleteBooking = inngest.createFunction(
 
             await show.save();
 
-            console.log(
-              "Seats Released Successfully"
-            );
+            // console.log(
+            //   "Seats Released Successfully"
+            // );
 
             await Booking.findByIdAndDelete(
               booking._id
             );
 
-            console.log(
-              "Booking Deleted Successfully"
-            );
+            // console.log(
+            //   "Booking Deleted Successfully"
+            // );
           } else {
             console.log(
               "Booking already paid. No action required."
@@ -195,6 +194,18 @@ const releaseSeatsAndDeleteBooking = inngest.createFunction(
     );
   }
 );
+// const releaseSeatsAndDeleteBooking = inngest.createFunction(
+//   {
+//     id: "release-seats-delete-booking",
+//     triggers: [{ event: "app/checkpayment" }],
+//   },
+//   async ({ event }) => {
+//     return {
+//       bookingId: event.data.bookingId,
+//       test: "working",
+//     };
+//   }
+// );
 
 
 // Export all functions
@@ -206,8 +217,3 @@ export const functions = [
 releaseSeatsAndDeleteBooking,
 
 ];
-console.log(
-  "Functions loaded:",
-  functions.map((fn) => fn.id)
-);
-console.log("Functions loaded:", functions.length);

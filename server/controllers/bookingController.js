@@ -91,7 +91,7 @@ await showData.save();
     // Run Inngest Sheduler Function to check payment status after 10 minutes
    
 
-console.log("Sending Inngest event...");
+// console.log("Sending Inngest event...");
 
 await inngest.send({
   name: "app/checkpayment",
@@ -100,7 +100,7 @@ await inngest.send({
   },
 });
 
-console.log("Inngest event sent successfully");
+// console.log("Inngest event sent successfully");
     res.json({success: true, url:session.url})
     
 }
