@@ -5,6 +5,7 @@ import Movie from "../models/Movie.js";
 import User from "../models/User.js";
 import Booking from "../models/Booking.js";
 import stripe from 'stripe'
+import { inngest } from "../inngest/index.js";
 
 const checkSeatsAvailability = async (showId, selectedSeats)=>{
     try {
@@ -52,7 +53,7 @@ try {
     selectedSeats.forEach((seat) => {
     showData.occupiedSeats[seat] = userId;
 });
-
+showData.occupiedSeats[seat] = booking._id;
 showData.markModified("occupiedSeats");
 await showData.save();
  const stripeInstance=new stripe(process.env.STRIPE_SECRET_KEY)
@@ -78,6 +79,18 @@ await showData.save();
     })
     booking.paymentLink = session.url
     await booking.save()
+
+    // Run Inngest Sheduler Function to check payment status after 10 minutes
+    await inngest.send({
+        name:"app/checkpayment",
+        data:{
+        bookingId: booking._id.tostring()
+        }
+
+        })
+
+
+
     res.json({success: true, url:session.url})
     
 }
